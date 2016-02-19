@@ -10,3 +10,7 @@ dependencies {
 	testCompile	'org.assertj:assertj-core:3.3.0'
     testCompile 'com.h2database:h2:1.4.191'
 }
+
+test {
+    useTestNG()
+}
