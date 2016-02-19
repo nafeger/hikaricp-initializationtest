@@ -2,10 +2,8 @@ package com.nate_land.hikarcp_test;
 
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
-import org.assertj.core.api.Assertions;
 import org.testng.annotations.Test;
 
-import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -66,6 +64,39 @@ public class HikariQuickTest {
 
         try (HikariDataSource ds = new HikariDataSource(config)) {
             Thread.sleep(1000);
+
+            try (Connection connection = ds.getConnection()) {
+                Connection unwrap = connection.unwrap(Connection.class);
+                try (PreparedStatement statement = connection.prepareStatement("select 1")) {
+                    assertThat(statement.getQueryTimeout()).isEqualTo(5);
+                }
+                connection.setAutoCommit(false);
+                connection.close();
+
+                assertThat(unwrap.getAutoCommit()).isEqualTo(true);
+            }
+        }
+    }
+
+    /**
+     * Why you fail?
+     *
+     */
+    @Test
+    public void testUseConfigNoSleep() throws SQLException, InterruptedException {
+        HikariConfig config = new HikariConfig();
+        config.setAutoCommit(true);
+        config.setMinimumIdle(1);
+        config.setMaximumPoolSize(1);
+        config.setConnectionTimeout(5000);
+        config.setConnectionTestQuery("select 1");
+        config.setDriverClassName("org.h2.Driver");
+        config.setJdbcUrl("jdbc:h2:mem:DbTest-" + UUID.randomUUID() + ";user=sa");
+        config.addDataSourceProperty("loginTimeout", "10");
+
+
+        try (HikariDataSource ds = new HikariDataSource(config)) {
+//            Thread.sleep(1000);
 
             try (Connection connection = ds.getConnection()) {
                 Connection unwrap = connection.unwrap(Connection.class);
